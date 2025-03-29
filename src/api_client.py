@@ -82,13 +82,23 @@ class HeadHunterAPI(APIClient):
             "page": page,
             "per_page": 100  # Максимальное количество вакансий на странице
         }
-
         try:
             response = requests.get(url, params=params, headers=self.__headers)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            if 'items' not in data:
+                print("Ключ 'items' не найден в ответе API.")  # Выводим сообщение об ошибке
+                return data  # Возвращаем  data
+            return data
         except requests.exceptions.RequestException as e:
             print(f"Error getting vacancies from hh.ru: {e}")
             return None
-        finally:
-            time.sleep(0.2)  # Задержка в 200 миллисекунд между запросами
+        # try:
+        #     response = requests.get(url, params=params, headers=self.__headers)
+        #     response.raise_for_status()
+        #     return response.json()
+        # except requests.exceptions.RequestException as e:
+        #     print(f"Error getting vacancies from hh.ru: {e}")
+        #     return None
+        # finally:
+        #     time.sleep(0.2)  # Задержка в 200 миллисекунд между запросами

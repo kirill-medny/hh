@@ -1,63 +1,89 @@
 import pytest
-from src.api_client import HeadHunterAPI
+from unittest.mock import patch
+from src.api_client import HeadHunterAPI, APIClient
+import requests
 
-def test_headhunter_api_get_vacancies():
-    hh_api = HeadHunterAPI()
-    data = hh_api.get_vacancies("Python developer", page=0)
-    assert "items" in data
-    assert isinstance(data["items"], list)
+# Тест для проверки создания User-Agent
+def test_create_user_agent(hh_api):
+    user_agent = hh_api._create_user_agent()
+    assert isinstance(user_agent, str)
+    assert "MyVacancyParser" in user_agent  # Проверяем, что название приложения указано
 
-# tests/test_vacancy.py
-from src.vacancy import Vacancy
+# Тест для проверки подключения к API (мокируем requests.get)
+@patch('requests.get')
+def test_connect_success(mock_get, hh_api):
+    mock_get.return_value.raise_for_status = lambda: None  # Успешный статус код
+    hh_api._connect()  # Проверяем, что не возникает исключений
 
-def test_vacancy_comparison():
-    v1 = Vacancy("Junior Python Dev", "url1", 50000, 80000, "Some description")
-    v2 = Vacancy("Senior Python Dev", "url2", 100000, 150000, "Another description")
-    assert v2 > v1
-    assert v1 < v2
-    assert v1 == Vacancy("Another Junior Python Dev", "url3", 50000, 70000, "Description") #Добавил еще один объект, но с той же самой зарплатой, чтоб проверить равенство
+# Тест для проверки подключения к API при ошибке (мокируем requests.get)
+@patch('requests.get')
+def test_connect_failure(mock_get, hh_api):
+    mock_get.side_effect = requests.exceptions.RequestException("Connection error")
+    with pytest.raises(ConnectionError):
+        hh_api._connect()
 
-# tests/test_file_manager.py
-import pytest
-import os
-from src.file_manager import JSONFileManager
+# Тест для проверки получения вакансий (мокируем requests.get)
+@patch('requests.get')
+def test_get_vacancies_success(mock_get, hh_api):
+    # Мокируем успешный ответ API
+    mock_response = {
+        "items": [
+            {"name": "Python Developer", "url": "url1"},
+            {"name": "Data Scientist", "url": "url2"}
+        ],
+        "found": 2,
+        "pages": 1,
+        "per_page": 100
+    }
+    mock_get.return_value.json.return_value = mock_response
+    mock_get.return_value.raise_for_status = lambda: None
 
-@pytest.fixture
-def json_file_manager():
-    filename = "test_vacancies.json"
-    yield JSONFileManager(filename)
-    if os.path.exists(filename):
-        os.remove(filename)
+    vacancies = hh_api.get_vacancies("Python", "113", page=0)
+    assert isinstance(vacancies['items'], list)  # Проверяем, что vacancies['items'] - это список
+    assert len(vacancies['items']) == 2  # Проверяем длину списка
+    assert vacancies['items'][0]["name"] == "Python Developer"  # Проверяем элемент списка
 
-def test_json_file_manager_add_vacancy(json_file_manager):
-    vacancy = {"title": "Test Vacancy", "url": "test_url"}
-    json_file_manager.add_vacancy(vacancy)
-    vacancies = json_file_manager.get_vacancies()
-    assert len(vacancies) == 1
-    assert vacancies[0]["title"] == "Test Vacancy"
+# Тест для проверки получения вакансий при ошибке API (мокируем requests.get)
+@patch('requests.get')
+def test_get_vacancies_failure(mock_get, hh_api):
+    mock_get.side_effect = requests.exceptions.RequestException("API error")
+    vacancies = hh_api.get_vacancies("Python", "113", page=0)
+    assert vacancies is None
 
-def test_json_file_manager_get_vacancies(json_file_manager):
-    vacancy1 = {"title": "Test Vacancy 1", "url": "test_url_1", "salary_from": 50000}
-    vacancy2 = {"title": "Test Vacancy 2", "url": "test_url_2", "salary_from": 100000}
-    json_file_manager.add_vacancy(vacancy1)
-    json_file_manager.add_vacancy(vacancy2)
-    filtered_vacancies = json_file_manager.get_vacancies({"salary_from": 50000})
-    assert len(filtered_vacancies) == 1
-    assert filtered_vacancies[0]["title"] == "Test Vacancy 1"
+# Параметризованный тест для различных сценариев запроса вакансий (мокируем requests.get)
+@pytest.mark.parametrize(
+    "search_query, area, page, expected_count",
+    [
+        ("Python", "113", 0, 2),  # Успешный запрос
+        ("Java", "1", 0, 0),  # Нет вакансий по запросу
+    ]
+)
+@patch('requests.get')
+def test_get_vacancies_parameterized(mock_get, hh_api, search_query, area, page, expected_count):
+    # Мокируем ответ API в зависимости от параметров
+    if search_query == "Python":
+        mock_response = {
+            "items": [
+                {"name": "Python Developer", "url": "url1"},
+                {"name": "Data Scientist", "url": "url2"}
+            ],
+            "found": 2,
+            "pages": 1,
+            "per_page": 100
+        }
+    else:
+        mock_response = {
+            "items": [],
+            "found": 0,
+            "pages": 0,
+            "per_page": 100
+        }
+    mock_get.return_value.json.return_value = mock_response
+    mock_get.return_value.raise_for_status = lambda: None
 
-def test_json_file_manager_delete_vacancy(json_file_manager):
-    vacancy1 = {"title": "Test Vacancy 1", "url": "test_url_1"}
-    vacancy2 = {"title": "Test Vacancy 2", "url": "test_url_2"}
-    json_file_manager.add_vacancy(vacancy1)
-    json_file_manager.add_vacancy(vacancy2)
-    json_file_manager.delete_vacancy("test_url_1")
-    vacancies = json_file_manager.get_vacancies()
-    assert len(vacancies) == 1
-    assert vacancies[0]["title"] == "Test Vacancy 2"
-
-def test_json_file_manager_clear_file(json_file_manager):
-    vacancy1 = {"title": "Test Vacancy 1", "url": "test_url_1"}
-    json_file_manager.add_vacancy(vacancy1)
-    json_file_manager.clear_file()
-    vacancies = json_file_manager.get_vacancies()
-    assert len(vacancies) == 0
+    vacancies = hh_api.get_vacancies(search_query, area, page)
+    if expected_count > 0:
+        assert isinstance(vacancies['items'], list)
+        assert len(vacancies['items']) == expected_count
+    else:
+        assert vacancies['items'] == mock_response["items"]  # Проверяем, что vacancies - пустой список
