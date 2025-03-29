@@ -3,7 +3,7 @@ from src.vacancy import Vacancy
 from src.file_manager import JSONFileManager
 from typing import List, Dict, Optional
 
-def get_vacancies_from_hh(search_query: str, num_pages: int = 1) -> List[Vacancy]:
+def get_vacancies_from_hh(search_query: str, area_id: str, num_pages: int = 1) -> List[Vacancy]:
     """
     Получает вакансии с hh.ru и возвращает список объектов Vacancy.
 
@@ -17,7 +17,7 @@ def get_vacancies_from_hh(search_query: str, num_pages: int = 1) -> List[Vacancy
     hh_api = HeadHunterAPI()
     vacancies: List[Vacancy] = []
     for page in range(num_pages):
-        data = hh_api.get_vacancies(search_query, page)
+        data = hh_api.get_vacancies(search_query, area_id, page)
         if not data or 'items' not in data:
             continue # Пропускаем страницы без данных
         for item in data['items']:
@@ -112,8 +112,11 @@ def interact_with_user():
     Организует поиск, фильтрацию и отображение вакансий.
     """
     search_query = input("Введите поисковый запрос: ")
+    area_id = input("Введите ID города (оставьте пустым для поиска по России): ")
+    if not area_id:
+        area_id = "113"
     num_pages = int(input("Сколько страниц поискать? "))
-    vacancies = get_vacancies_from_hh(search_query, num_pages)
+    vacancies = get_vacancies_from_hh(search_query, area_id, num_pages)
 
     if not vacancies:
         print("Нет вакансий, соответствующих запросу.")
@@ -134,11 +137,7 @@ def interact_with_user():
     # Получаем вакансии с ключевым словом в описании
     keyword = input("Введите ключевое слово для поиска в описании: ")
     keyword_vacancies = [
-        vacancy for vacancy in vacancies if keyword.description and keyword.description.lower().find(keyword.lower()) != -1
+        vacancy for vacancy in vacancies if vacancy.description and keyword.lower() in vacancy.description.lower()
     ]
     print(f"\nВакансии с ключевым словом '{keyword}':")
     display_vacancies(keyword_vacancies)  #Используем display_vacancies для вывода
-
-# Пример использования (можно удалить после реализации main.py)
-if __name__ == '__main__':
-    interact_with_user()

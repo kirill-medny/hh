@@ -12,7 +12,14 @@ class APIClient(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_vacancies(self, search_query: str, page: int = 0) -> Optional[Dict]:
+    def _connect(self) -> None:
+        """
+        Абстрактный метод для подключения к API.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_vacancies(self, search_query: str, area: str, page: int = 0) -> Optional[Dict]:
         """
         Абстрактный метод для получения вакансий по заданному запросу.
 
@@ -54,14 +61,24 @@ class HeadHunterAPI(APIClient):
         user_agent = f"{app_name}/{version} ({os_name} {os_version}; {architecture}) Python/{python_version} Requests/{requests_version}"
         return user_agent
 
-    def get_vacancies(self, search_query: str, page: int = 0) -> Optional[Dict]:
+    def _connect(self) -> None:
+        """
+        Приватный метод для проверки подключения к API hh.ru.
+        """
+        try:
+            response = requests.get(self.__base_url, headers=self.__headers)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(f"Ошибка подключения к API hh.ru: {e}")
+
+    def get_vacancies(self, search_query: str, area: str, page: int = 0) -> Optional[Dict]:
         """
         Получает список вакансий с hh.ru по заданному запросу.
         """
         url = f"{self.__base_url}/vacancies"
         params = {
             "text": search_query,
-            "area": 81,
+            "area": area,
             "page": page,
             "per_page": 100  # Максимальное количество вакансий на странице
         }
