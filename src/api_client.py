@@ -1,0 +1,77 @@
+import abc
+import time
+import requests
+from typing import Dict, Optional
+
+class APIClient(abc.ABC):
+    """
+    Абстрактный класс для работы с API сервисов с вакансиями.
+    """
+
+    def __init__(self):
+        pass
+
+    @abc.abstractmethod
+    def get_vacancies(self, search_query: str, page: int = 0) -> Optional[Dict]:
+        """
+        Абстрактный метод для получения вакансий по заданному запросу.
+
+        Args:
+            search_query: поисковый запрос.
+            page: номер страницы (для пагинации).
+
+        Returns:
+            Список вакансий.
+        """
+        pass
+
+
+class HeadHunterAPI(APIClient):
+    """
+    Класс для работы с API hh.ru.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.__base_url = "https://api.hh.ru"
+        self.__headers = {
+            "User-Agent": self._create_user_agent()
+        }
+
+    def _create_user_agent(self) -> str:
+        """Создает User-Agent строку."""
+        import platform
+        import requests
+        os_name = platform.system()
+        os_version = platform.version()
+        architecture = platform.machine()
+        python_version = platform.python_version()
+        requests_version = requests.__version__
+
+        app_name = "MyVacancyParser" # Замените на название вашего приложения
+        version = "1.0" # Замените на версию вашего приложения
+
+        user_agent = f"{app_name}/{version} ({os_name} {os_version}; {architecture}) Python/{python_version} Requests/{requests_version}"
+        return user_agent
+
+    def get_vacancies(self, search_query: str, page: int = 0) -> Optional[Dict]:
+        """
+        Получает список вакансий с hh.ru по заданному запросу.
+        """
+        url = f"{self.__base_url}/vacancies"
+        params = {
+            "text": search_query,
+            "area": 81,
+            "page": page,
+            "per_page": 100  # Максимальное количество вакансий на странице
+        }
+
+        try:
+            response = requests.get(url, params=params, headers=self.__headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"Error getting vacancies from hh.ru: {e}")
+            return None
+        finally:
+            time.sleep(0.2)  # Задержка в 200 миллисекунд между запросами
