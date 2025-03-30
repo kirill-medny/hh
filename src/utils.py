@@ -1,7 +1,9 @@
+from typing import Dict, List, Optional
+
 from src.api_client import HeadHunterAPI
-from src.vacancy import Vacancy
 from src.file_manager import JSONFileManager
-from typing import List, Dict, Optional
+from src.vacancy import Vacancy
+
 
 def get_vacancies_from_hh(search_query: str, area_id: str, num_pages: int = 1) -> List[Vacancy]:
     """
@@ -18,13 +20,14 @@ def get_vacancies_from_hh(search_query: str, area_id: str, num_pages: int = 1) -
     vacancies: List[Vacancy] = []
     for page in range(num_pages):
         data = hh_api.get_vacancies(search_query, area_id, page)
-        if not data or 'items' not in data:
-            continue # Пропускаем страницы без данных
-        for item in data['items']:
+        if not data or "items" not in data:
+            continue  # Пропускаем страницы без данных
+        for item in data["items"]:
             vacancy = create_vacancy_from_hh_item(item)
             if vacancy:
                 vacancies.append(vacancy)
     return vacancies
+
 
 def create_vacancy_from_hh_item(item: Dict) -> Optional[Vacancy]:
     """
@@ -37,28 +40,29 @@ def create_vacancy_from_hh_item(item: Dict) -> Optional[Vacancy]:
         Объект Vacancy или None, если не удалось создать.
     """
     try:
-        salary_from = item['salary']['from'] if item['salary'] and item['salary']['from'] else 0
-        salary_to = item['salary']['to'] if item['salary'] and item['salary']['to'] else 0
+        salary_from = item["salary"]["from"] if item["salary"] and item["salary"]["from"] else 0
+        salary_to = item["salary"]["to"] if item["salary"] and item["salary"]["to"] else 0
     except (TypeError, KeyError):
         salary_from = 0
         salary_to = 0
 
     try:
-        description = item['snippet']['requirement'] or item['snippet']['responsibility'] or ""
+        description = item["snippet"]["requirement"] or item["snippet"]["responsibility"] or ""
     except (TypeError, KeyError):
         description = ""
 
     try:
         vacancy = Vacancy(
-            title=item['name'],
-            url=item['alternate_url'],
+            title=item["name"],
+            url=item["alternate_url"],
             salary_from=salary_from,
             salary_to=salary_to,
-            description=description
+            description=description,
         )
         return vacancy
     except KeyError:
-        return None #Возвращаем None, если не удалось создать Vacancy
+        return None  # Возвращаем None, если не удалось создать Vacancy
+
 
 def display_vacancies(vacancies: List[Vacancy]) -> None:
     """
@@ -78,14 +82,16 @@ def display_vacancies(vacancies: List[Vacancy]) -> None:
         print(f"Описание: {vacancy.description}")
         print("-" * 20)
 
+
 def save_vacancies_to_file(vacancies: List[Vacancy], filename: str) -> None:
     """
     Сохраняет список вакансий в JSON-файл.
     """
     file_manager = JSONFileManager(filename)
     for vacancy in vacancies:
-        file_manager.add_vacancy(dict(vacancy)) # Используем dict(vacancy)
+        file_manager.add_vacancy(dict(vacancy))  # Используем dict(vacancy)
     print(f"Сохранено {len(vacancies)} вакансий в {filename}")
+
 
 def load_vacancies_from_file(filename: str) -> List[Vacancy]:
     """
@@ -101,12 +107,12 @@ def load_vacancies_from_file(filename: str) -> List[Vacancy]:
     vacancy_data = file_manager.get_vacancies()
     vacancies = []
     for data in vacancy_data:
-        vacancy = Vacancy(**data) # Создаем Vacancy объект из словаря
+        vacancy = Vacancy(**data)  # Создаем Vacancy объект из словаря
         vacancies.append(vacancy)
     return vacancies
 
 
-def interact_with_user():
+def interact_with_user() -> None:
     """
     Функция для взаимодействия с пользователем через консоль.
     Организует поиск, фильтрацию и отображение вакансий.
@@ -130,7 +136,7 @@ def interact_with_user():
         n = int(input("Введите количество топ вакансий по зарплате, которые хотите увидеть: "))
         top_vacancies = sorted(vacancies, reverse=True)[:n]  # Сортировка по убыванию
         print("\nТоп вакансии по зарплате:")
-        display_vacancies(top_vacancies) #Используем display_vacancies для вывода
+        display_vacancies(top_vacancies)  # Используем display_vacancies для вывода
     except ValueError:
         print("Некорректный ввод для количества вакансий.")
 
@@ -140,4 +146,4 @@ def interact_with_user():
         vacancy for vacancy in vacancies if vacancy.description and keyword.lower() in vacancy.description.lower()
     ]
     print(f"\nВакансии с ключевым словом '{keyword}':")
-    display_vacancies(keyword_vacancies)  #Используем display_vacancies для вывода
+    display_vacancies(keyword_vacancies)  # Используем display_vacancies для вывода

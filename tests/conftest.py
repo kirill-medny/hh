@@ -1,53 +1,51 @@
-import pytest
-from src.api_client import HeadHunterAPI, APIClient
-import requests
 import os
-import json
-import csv
-from src.file_manager import JSONFileManager, CSVFileManager
-from unittest.mock import patch, MagicMock
-from src.utils import (
-    get_vacancies_from_hh,
-    create_vacancy_from_hh_item,
-    display_vacancies,
-    save_vacancies_to_file,
-    load_vacancies_from_file,
-)
+from pathlib import Path
+from typing import Any, Dict, Generator
+from unittest.mock import MagicMock, patch
+
+import pytest
+from _pytest.tmpdir import LocalPath
+
+from src.api_client import HeadHunterAPI
+from src.file_manager import CSVFileManager, JSONFileManager
 from src.vacancy import Vacancy
-from src.file_manager import JSONFileManager
+
 
 @pytest.fixture
-def hh_api():
+def hh_api() -> HeadHunterAPI:
     return HeadHunterAPI()
 
+
 @pytest.fixture
-def json_file_manager(tmpdir):
+def json_file_manager(tmpdir: Path) -> Generator[JSONFileManager, None, None]:
     """Фикстура для создания временного JSONFileManager."""
-    filename = tmpdir.join("test_vacancies.json")
-    file_manager = JSONFileManager(filename)
+    filename = tmpdir / "test_vacancies.json"
+    file_manager = JSONFileManager(str(filename))
     yield file_manager
-    if os.path.exists(filename):
-        os.remove(filename)
+    if os.path.exists(str(filename)):
+        os.remove(str(filename))
 
 
 @pytest.fixture
-def csv_file_manager(tmpdir):
+def csv_file_manager(tmpdir: Path) -> Generator[CSVFileManager, None, None]:
     """Фикстура для создания временного CSVFileManager."""
-    filename = tmpdir.join("test_vacancies.csv")
-    file_manager = CSVFileManager(filename)
+    filename = tmpdir / "test_vacancies.csv"  # Используем оператор /
+    file_manager = CSVFileManager(str(filename))
     yield file_manager
-    if os.path.exists(filename):
-        os.remove(filename)
+    if os.path.exists(str(filename)):
+        os.remove(str(filename))
+
 
 @pytest.fixture
-def mock_hh_api():
+def mock_hh_api() -> Generator[MagicMock, None, None]:
     """Фикстура для мокирования HeadHunterAPI."""
     with patch("src.utils.HeadHunterAPI") as MockHeadHunterAPI:
         mock_api = MockHeadHunterAPI.return_value
         yield mock_api
 
+
 @pytest.fixture
-def sample_hh_item():
+def sample_hh_item() -> Dict[str, Any]:
     """Фикстура для создания sample_hh_item."""
     return {
         "name": "Python Developer",
@@ -56,8 +54,9 @@ def sample_hh_item():
         "snippet": {"requirement": "Python, Django", "responsibility": "Develop web applications"},
     }
 
+
 @pytest.fixture
-def sample_vacancy():
+def sample_vacancy() -> Vacancy:
     """Фикстура для создания sample_vacancy."""
     return Vacancy(
         title="Python Developer",

@@ -1,14 +1,15 @@
 import abc
-import time
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Optional
+
 
 class APIClient(abc.ABC):
     """
     Абстрактный класс для работы с API сервисов с вакансиями.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @abc.abstractmethod
@@ -38,27 +39,30 @@ class HeadHunterAPI(APIClient):
     Класс для работы с API hh.ru.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.__base_url = "https://api.hh.ru"
-        self.__headers = {
-            "User-Agent": self._create_user_agent()
-        }
+        self.__headers = {"User-Agent": self._create_user_agent()}
 
     def _create_user_agent(self) -> str:
         """Создает User-Agent строку."""
         import platform
+
         import requests
+
         os_name = platform.system()
         os_version = platform.version()
         architecture = platform.machine()
         python_version = platform.python_version()
         requests_version = requests.__version__
 
-        app_name = "MyVacancyParser" # Замените на название вашего приложения
-        version = "1.0" # Замените на версию вашего приложения
+        app_name = "MyVacancyParser"  # Замените на название вашего приложения
+        version = "1.0"  # Замените на версию вашего приложения
 
-        user_agent = f"{app_name}/{version} ({os_name} {os_version}; {architecture}) Python/{python_version} Requests/{requests_version}"
+        user_agent = (
+            f"{app_name}/{version} ({os_name} {os_version}; "
+            f"{architecture}) Python/{python_version} Requests/{requests_version}"
+        )
         return user_agent
 
     def _connect(self) -> None:
@@ -71,7 +75,7 @@ class HeadHunterAPI(APIClient):
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Ошибка подключения к API hh.ru: {e}")
 
-    def get_vacancies(self, search_query: str, area: str, page: int = 0) -> Optional[Dict]:
+    def get_vacancies(self, search_query: str, area: str, page: int = 0) -> Optional[Dict[str, Any]]:
         """
         Получает список вакансий с hh.ru по заданному запросу.
         """
@@ -80,25 +84,22 @@ class HeadHunterAPI(APIClient):
             "text": search_query,
             "area": area,
             "page": page,
-            "per_page": 100  # Максимальное количество вакансий на странице
+            "per_page": 100,  # Максимальное количество вакансий на странице
         }
         try:
-            response = requests.get(url, params=params, headers=self.__headers)
+            response = requests.get(url, params=params, headers=self.__headers)  # type: ignore
             response.raise_for_status()
-            data = response.json()
-            if 'items' not in data:
+            data: Dict[str, Any] = response.json()
+            if "items" not in data:
                 print("Ключ 'items' не найден в ответе API.")  # Выводим сообщение об ошибке
                 return data  # Возвращаем  data
             return data
         except requests.exceptions.RequestException as e:
             print(f"Error getting vacancies from hh.ru: {e}")
             return None
-        # try:
-        #     response = requests.get(url, params=params, headers=self.__headers)
-        #     response.raise_for_status()
-        #     return response.json()
-        # except requests.exceptions.RequestException as e:
-        #     print(f"Error getting vacancies from hh.ru: {e}")
-        #     return None
-        # finally:
-        #     time.sleep(0.2)  # Задержка в 200 миллисекунд между запросами
+
+
+class MockHeadHunterAPI:
+    def get_vacancies(self, search_query: str, area: str, page: int) -> Dict[str, Any]:
+        """Мок для HeadHunterAPI."""
+        return {"items": []}
