@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from src.api_client import APIClient, HeadHunterAPI
+from src.api_client import HeadHunterAPI
 
 
 # Тест для проверки создания User-Agent
@@ -49,7 +49,7 @@ def test_get_vacancies_success(mock_get: MagicMock, hh_api: HeadHunterAPI) -> No
         assert len(vacancies["items"]) == 2  # Проверяем длину списка
         assert vacancies["items"][0]["name"] == "Python Developer"  # Проверяем элемент списка
     else:
-        assert False, "Vacancies should not be None"
+        assert False, "Vacancies не должно быть None"
 
 
 # Тест для проверки получения вакансий при ошибке API (мокируем requests.get)
@@ -97,6 +97,6 @@ def test_get_vacancies_parameterized(
             assert isinstance(vacancies["items"], list)
             assert len(vacancies["items"]) == expected_count
         else:
-            assert False, "Vacancies should not be None when expected_count > 0"
+            assert False, "Vacancies не должно быть None при expected_count > 0"
     else:
         assert vacancies is not None and vacancies["items"] == mock_response["items"]

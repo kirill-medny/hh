@@ -132,7 +132,7 @@ class CSVFileManager(FileManager):
         except FileNotFoundError:
             return []
         except Exception as e:
-            print(f"Error reading from CSV file: {e}")
+            print(f"Ошибка чтения из CSV-файла: {e}")
             return []
 
     def add_vacancy(self, vacancy: Dict) -> None:
@@ -149,7 +149,7 @@ class CSVFileManager(FileManager):
                     writer.writeheader()  # Запись заголовков
                     writer.writerows(vacancies)
             except Exception as e:
-                print(f"Error writing to CSV file: {e}")
+                print(f"Ошибка записи CSV-файла: {e}")
 
     def delete_vacancy(self, vacancy_id: str) -> None:
         """
@@ -164,7 +164,7 @@ class CSVFileManager(FileManager):
                 writer.writeheader()  # Запись заголовков
                 writer.writerows(updated_vacancies)
         except Exception as e:
-            print(f"Error writing to CSV file: {e}")
+            print(f"Ошибка записи из CSV-файла: {e}")
 
     def clear_file(self) -> None:
         """
@@ -172,6 +172,6 @@ class CSVFileManager(FileManager):
         """
         try:
             with open(self.__filename, "w", newline="", encoding="utf-8") as csvfile:
-                csvfile.truncate(0)  # Truncate the file to 0 bytes
+                csvfile.truncate(0)  # Сократите файл до 0 байт
         except Exception as e:
-            print(f"Error clearing CSV file: {e}")
+            print(f"Ошибка при очистке CSV-файла: {e}")

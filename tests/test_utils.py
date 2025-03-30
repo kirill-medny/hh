@@ -4,10 +4,7 @@ from typing import Any, Dict, List, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
-import requests_mock
 
-from src.api_client import MockHeadHunterAPI
-from src.file_manager import JSONFileManager
 from src.utils import (
     create_vacancy_from_hh_item,
     display_vacancies,

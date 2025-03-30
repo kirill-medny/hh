@@ -4,7 +4,6 @@ from typing import Any, Dict, Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
-from _pytest.tmpdir import LocalPath
 
 from src.api_client import HeadHunterAPI
 from src.file_manager import CSVFileManager, JSONFileManager

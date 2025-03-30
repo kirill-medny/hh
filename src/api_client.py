@@ -95,7 +95,7 @@ class HeadHunterAPI(APIClient):
                 return data  # Возвращаем  data
             return data
         except requests.exceptions.RequestException as e:
-            print(f"Error getting vacancies from hh.ru: {e}")
+            print(f"Ошибка при получении вакансий от hh.ru: {e}")
             return None
 
 
